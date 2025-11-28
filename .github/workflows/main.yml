@@ -23,7 +23,7 @@ jobs:
       run: ./siskin Rebol-Zstd.nest static-lib-x64
 
     - name: Build 64bit Rebol/Zstd extension
-      run: ./siskin Rebol-Zstd.nest -o ./brotli-windows-x64.rebx --msvc brotli-windows-x64
+      run: ./siskin Rebol-Zstd.nest -o ./zstd-windows-x64.rebx --msvc zstd-windows-x64
 
     - name: Minimal Rebol/Zstd extension test
       run:  ./siskin --script ci-test.r3
@@ -43,16 +43,16 @@ jobs:
       uses: oldes/install-siskin@v0.20.5
 
     - name: Build 64bit Rebol/Zstd extension
-      run: ./siskin Rebol-Zstd.nest brotli-linux-x64
+      run: ./siskin Rebol-Zstd.nest zstd-linux-x64
 
     - name: Prepare 64bit Rebol Zstd extension
-      run:  mv ./build/brotli-linux-x64.so ./brotli-linux-x64.rebx
+      run:  mv ./build/zstd-linux-x64.so ./zstd-linux-x64.rebx
 
     - name: Minimal Rebol/Zstd extension test
       run:  ./siskin --script ci-test.r3
 
     - name: Compress 64bit Rebol/Zstd extension
-      run:  gzip -9 ./brotli-linux-x64.rebx
+      run:  gzip -9 ./zstd-linux-x64.rebx
 
     - uses: actions/upload-artifact@v4
       with:
@@ -69,25 +69,25 @@ jobs:
       uses: oldes/install-siskin@v0.20.5
 
     - name: Build 64bit Rebol/Zstd extension
-      run: ./siskin Rebol-Zstd.nest %brotli-macos-x64
+      run: ./siskin Rebol-Zstd.nest %zstd-macos-x64
 
     - name: Prepare 64bit Rebol Zstd extension
-      run:  mv ./build/brotli-macos-x64.dylib ./brotli-macos-x64.rebx
+      run:  mv ./build/zstd-macos-x64.dylib ./zstd-macos-x64.rebx
 
     - name: Build 64bit Rebol/Zstd extension
-      run: ./siskin Rebol-Zstd.nest brotli-macos-arm64
+      run: ./siskin Rebol-Zstd.nest zstd-macos-arm64
 
     - name: Prepare 64bit Rebol Zstd extension
-      run:  mv ./build/brotli-macos-arm64.dylib ./brotli-macos-arm64.rebx
+      run:  mv ./build/zstd-macos-arm64.dylib ./zstd-macos-arm64.rebx
 
     - name: Minimal Rebol/Zstd extension test
       run:  ./siskin --script ci-test.r3
 
     - name: Compress x64 Rebol/Zstd extension
-      run:  gzip -9 ./brotli-macos-x64.rebx
+      run:  gzip -9 ./zstd-macos-x64.rebx
 
     - name: Compress arm64 Rebol/Zstd extension
-      run:  gzip -9 ./brotli-macos-arm64.rebx
+      run:  gzip -9 ./zstd-macos-arm64.rebx
 
     - uses: actions/upload-artifact@v4
       with:

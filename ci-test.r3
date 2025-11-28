@@ -104,7 +104,7 @@ print as-yellow "Compress and decompress files in chunks."
 
 compress-file: function[file][
     src: open/read file                 ;; input file
-    out: open/new/write join file %.br  ;; output file
+    out: open/new/write join file %.zst ;; output file
     enc: zstd/make-encoder/level 6      ;; initialize Zstd encoder
     chunk-size: 65536
     while [not finish][
