@@ -19,7 +19,6 @@ flag:   shared
 #if Windows? [
 	define: _CRT_SECURE_NO_WARNINGS
 	define: TO_WINDOWS
-	strip:  on
 ]
 #if Linux? [
 	compiler: gcc
@@ -60,7 +59,8 @@ r3-extension: [
 	include: %zstd/lib
 	source: %src/
 
-	define: ZSTD_STATIC_LINKING_ONLY
+	strip:  on
+
 	files: only [
 		%zstd-commands.c
 		%zstd-commands-table.c
@@ -85,7 +85,7 @@ r3-extension: [
 zstd-src: [
 	source: %zstd/lib/
 	files: [
-		%common/debug.c
+	;	%common/debug.c
 		%common/entropy_common.c
 		%common/error_private.c
 		%common/fse_decompress.c
@@ -116,13 +116,13 @@ zstd-src: [
 		%dictBuilder/divsufsort.c
 		%dictBuilder/fastcover.c
 		%dictBuilder/zdict.c
-		%legacy/zstd_v01.c
-		%legacy/zstd_v02.c
-		%legacy/zstd_v03.c
-		%legacy/zstd_v04.c
-		%legacy/zstd_v05.c
-		%legacy/zstd_v06.c
-		%legacy/zstd_v07.c
+	;	%legacy/zstd_v01.c
+	;	%legacy/zstd_v02.c
+	;	%legacy/zstd_v03.c
+	;	%legacy/zstd_v04.c
+	;	%legacy/zstd_v05.c
+	;	%legacy/zstd_v06.c
+	;	%legacy/zstd_v07.c
 	]
 ]
 
