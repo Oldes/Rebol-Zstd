@@ -235,7 +235,11 @@ int DecompressZstd(const REBYTE *input, REBLEN len, REBLEN limit, REBSER **outpu
 	result = ZSTD_initDStream(g_decoder);
 	if (ZSTD_isError(result)) {*error = (REBINT)result; return FALSE;}
 
+#ifdef ZSTD_STATIC_LINKING_ONLY
 	out_len = (limit != NO_LIMIT) ? limit : ZSTD_decompressBound(input, len);
+#else
+	out_len = (limit != NO_LIMIT) ? limit : len << 1;
+#endif
 
 	if (out_len == 0) {
 		// Return empty binary.
@@ -483,7 +487,7 @@ COMMAND cmd_read(RXIFRM *frm, void *ctx) {
 		ZSTD_CStream *state = (ZSTD_CStream*)hob->handle;
 		while(1) {
 			result = ZSTD_flushStream(state, &outBuffer);
-			printf("zstd flush result: %zu %zu\n", result, outBuffer.pos);
+			debug_print("zstd flush result: %zu %zu\n", result, outBuffer.pos);
 			SERIES_TAIL(buffer) = outBuffer.pos;
 			if (result == 0) break; // finished
 			if (ZSTD_isError(result)) RETURN_ERROR(ERR_NO_COMPRESS);
