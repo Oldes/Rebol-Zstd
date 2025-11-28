@@ -1,3 +1,5 @@
+![rebol-zstd](https://github.com/user-attachments/assets/05c0560a-d610-4cbb-b2da-e748f4f6541e)
+
 # Rebol/Zstd
 
 [Zstdandard](https://github.com/facebook/zstd) extension for [Rebol3](https://github.com/Oldes/Rebol3) (version 3.20.5 and higher)
