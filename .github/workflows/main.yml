@@ -1,0 +1,96 @@
+name: 'Rebol-Zstd CI'
+on:
+  # Triggers the workflow on push or pull request events but only for the main branch
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+
+  # Allows you to run this workflow manually from the Actions tab
+  workflow_dispatch:
+
+jobs:
+  windows:
+    runs-on: windows-latest
+    steps:
+    - name: Checkout repository
+      uses: actions/checkout@v4
+
+    - name: Install Siskin Builder
+      uses: oldes/install-siskin@v0.20.5
+
+    - name: Build 64bit static Zstd library
+      run: ./siskin Rebol-Zstd.nest static-lib-x64
+
+    - name: Build 64bit Rebol/Zstd extension
+      run: ./siskin Rebol-Zstd.nest -o ./brotli-windows-x64.rebx --msvc brotli-windows-x64
+
+    - name: Minimal Rebol/Zstd extension test
+      run:  ./siskin --script ci-test.r3
+
+    - uses: actions/upload-artifact@v4
+      with:
+        name: Rebol-Zstd-Windows-CI-${{github.run_id}}
+        path: ./*.rebx
+
+  linux:
+    runs-on: ubuntu-latest
+    steps:
+    - name: Checkout repository
+      uses: actions/checkout@v4
+
+    - name: Install Siskin Builder
+      uses: oldes/install-siskin@v0.20.5
+
+    - name: Build 64bit Rebol/Zstd extension
+      run: ./siskin Rebol-Zstd.nest brotli-linux-x64
+
+    - name: Prepare 64bit Rebol Zstd extension
+      run:  mv ./build/brotli-linux-x64.so ./brotli-linux-x64.rebx
+
+    - name: Minimal Rebol/Zstd extension test
+      run:  ./siskin --script ci-test.r3
+
+    - name: Compress 64bit Rebol/Zstd extension
+      run:  gzip -9 ./brotli-linux-x64.rebx
+
+    - uses: actions/upload-artifact@v4
+      with:
+        name: Rebol-Zstd-Linux-CI-${{github.run_id}}
+        path: ./*.gz
+
+  macos:
+    runs-on: macos-latest
+    steps:
+    - name: Checkout repository
+      uses: actions/checkout@v4
+
+    - name: Install Siskin Builder
+      uses: oldes/install-siskin@v0.20.5
+
+    - name: Build 64bit Rebol/Zstd extension
+      run: ./siskin Rebol-Zstd.nest %brotli-macos-x64
+
+    - name: Prepare 64bit Rebol Zstd extension
+      run:  mv ./build/brotli-macos-x64.dylib ./brotli-macos-x64.rebx
+
+    - name: Build 64bit Rebol/Zstd extension
+      run: ./siskin Rebol-Zstd.nest brotli-macos-arm64
+
+    - name: Prepare 64bit Rebol Zstd extension
+      run:  mv ./build/brotli-macos-arm64.dylib ./brotli-macos-arm64.rebx
+
+    - name: Minimal Rebol/Zstd extension test
+      run:  ./siskin --script ci-test.r3
+
+    - name: Compress x64 Rebol/Zstd extension
+      run:  gzip -9 ./brotli-macos-x64.rebx
+
+    - name: Compress arm64 Rebol/Zstd extension
+      run:  gzip -9 ./brotli-macos-arm64.rebx
+
+    - uses: actions/upload-artifact@v4
+      with:
+        name: Rebol-Zstd-macOS-CI-${{github.run_id}}
+        path: ./*.gz
+

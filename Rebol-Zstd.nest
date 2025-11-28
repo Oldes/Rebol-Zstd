@@ -1,0 +1,186 @@
+;-    .-.                                                                       
+;-   /'v'\   SISKIN-Builder project file                                        
+;-  (/uOu\)  https://github.com/Siskin-framework/Builder/                       
+;-===="="=======================================================================
+
+github: facebook/zstd
+
+version: 0.1.0
+
+compiler: clang
+arch:     x64
+optimize: 2
+
+;define: USE_TRACES
+
+;- options common for all Rebol extensions ----------------------
+flag:   shared
+
+#if Windows? [
+	define: _CRT_SECURE_NO_WARNINGS
+	define: TO_WINDOWS
+	strip:  on
+]
+#if Linux? [
+	compiler: gcc
+]
+
+target-x86: [
+	arch: x86
+]
+target-x64: [
+	arch: x64
+	defines: [
+		_FILE_OFFSET_BITS=64
+		__LP64__       ; has long (integer) 64 bits
+	]
+	#if macOS?   [ flag: "-arch x86_64" ]
+]
+target-arm64: [
+	arch: arm64
+	#if Linux? [
+		flag: "-arch arm64"
+	]
+	#if macOS? [
+		flag: "-target arm64-apple-darwin"
+	]
+	define: _FILE_OFFSET_BITS=64
+	define: __LP64__   ; has long (integer) 64 bits
+	define: __arm64__
+]
+target-armv7: [
+	arch: armv7
+	flag: "-march=armv7"
+]
+;----------------------------------------------------------------
+
+
+r3-extension: [
+	flags:  shared
+	include: %zstd/lib
+	source: %src/
+
+	define: ZSTD_STATIC_LINKING_ONLY
+	files: only [
+		%zstd-commands.c
+		%zstd-commands-table.c
+		%zstd-rebol-extension.c
+	]
+	#if macOS? [
+		lflags:  [-dynamiclib]
+		flag:    -mmacosx-version-min=10.9
+		compiler: clang
+	]
+	#if Posix? [
+		cflags: [-fPIC -pthread]
+		libraries: [%pthread]
+	]
+	#if Windows? [
+		upx: on
+	]
+	;- generate main extension header --------------------------------
+	do %src/zstd-rebol-extension.r3 
+]
+
+zstd-src: [
+	source: %zstd/lib/
+	files: [
+		%common/debug.c
+		%common/entropy_common.c
+		%common/error_private.c
+		%common/fse_decompress.c
+		%common/pool.c
+		%common/threading.c
+		%common/xxhash.c
+		%common/zstd_common.c
+		%compress/fse_compress.c
+		%compress/hist.c
+		%compress/huf_compress.c
+		%compress/zstd_compress.c
+		%compress/zstd_compress_literals.c
+		%compress/zstd_compress_sequences.c
+		%compress/zstd_compress_superblock.c
+		%compress/zstd_double_fast.c
+		%compress/zstd_fast.c
+		%compress/zstd_lazy.c
+		%compress/zstd_ldm.c
+		%compress/zstd_opt.c
+		%compress/zstd_preSplit.c
+		%compress/zstdmt_compress.c
+		%decompress/huf_decompress.c
+		%decompress/huf_decompress_amd64.S
+		%decompress/zstd_ddict.c
+		%decompress/zstd_decompress.c
+		%decompress/zstd_decompress_block.c
+		%dictBuilder/cover.c
+		%dictBuilder/divsufsort.c
+		%dictBuilder/fastcover.c
+		%dictBuilder/zdict.c
+		%legacy/zstd_v01.c
+		%legacy/zstd_v02.c
+		%legacy/zstd_v03.c
+		%legacy/zstd_v04.c
+		%legacy/zstd_v05.c
+		%legacy/zstd_v06.c
+		%legacy/zstd_v07.c
+	]
+]
+
+eggs: [
+	#if Windows? [
+		"Make Zstd static library (cmake) - x86" [
+			arch: x86
+			name: %static-lib-x86
+			cmd %_static_x86/ "cmake ../zstd/ -A Win32 -DCMAKE_BUILD_TYPE=Release -DBUILD_SHARED_LIBS=OFF"
+			cmd %_static_x86/ {cmake --build . --config release -j 8}
+		]
+		"Make Zstd static library (cmake) - x64" [
+			arch: x64
+			name: %static-lib-x64
+			cmd %_static_x64/ "cmake ../zstd/ -DCMAKE_BUILD_TYPE=Release -DBUILD_SHARED_LIBS=OFF"
+			cmd %_static_x64/ {cmake --build . --config release -j 8}
+		]
+		"Rebol Zstd extension: win32_x86" [
+			name: %zstd-windows-x86
+			:target-x86
+			:r3-extension
+		]
+		"Rebol Zstd extension: win32_x64" [
+			name: %zstd-windows-x64
+			:target-x64
+			:r3-extension
+			libraries: [
+				%_static_x64\build\cmake\lib\Release\zstd_static
+			]
+		]
+	]
+	#if macOS? [
+		"Rebol Zstd extension: macos_x64" [
+			name: %zstd-macos-x64
+			:r3-extension
+			:zstd-src
+			:target-x64
+		]
+		"Rebol Zstd extension: macos_arm64" [
+			name: %zstd-macos-arm64
+			:r3-extension
+			:zstd-src
+			:target-arm64
+		]
+	]
+	#if Linux? [
+		"Rebol Zstd extension:linux_x64" [
+			name: %brotli-linux-x64
+			:r3-extension
+			:zstd-src
+			:target-x64
+		]
+		"Rebol Zstd extension: linux_arm64" [
+			name: %brotli-linux-arm64
+			:r3-extension
+			:zstd-src
+			:target-arm64
+		]
+	]
+]
+
