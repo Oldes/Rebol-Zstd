@@ -6,17 +6,18 @@
 
 # Rebol/Zstd
 
-[Zstandard](https://github.com/facebook/zstd) extension for [Rebol3](https://github.com/Oldes/Rebol3) (version 3.20.5 and higher)
+[Zstandard](https://github.com/facebook/zstd) compression extension for [Rebol3](https://github.com/Oldes/Rebol3) (version 3.20.5 or newer)
 
-## Usage
-Basic usage is just using `import zstd` and then use `zstd` method with default Rebol `compress` and `decompress` functions. Like:
+## Basic usage
+Use Zstandard as a codec for the standard compress and decompress functions:
 ```rebol
 import zstd
 bin: compress "some data" 'zstd
 txt: to string! decompress bin 'zstd
 ```
 
-Additionally, this extension provides a streaming API, allowing data to be (de)compressed in chunks without requiring it to be fully loaded into memory.
+## Streaming API
+The streaming API lets you process data in chunks, which is useful for large inputs, pipes, or network streams.
 ```rebol
 zstd: import zstd        ;; Import the module and assign it to a variable
 enc: zstd/make-encoder   ;; Initialize the Zstandard encoder state handle
@@ -29,6 +30,7 @@ bin1: zstd/read :enc
 ;; Continue with other data and use `/finish` to encode all remaining input
 ;; and mark the stream as complete.
 bin2: zstd/write/finish :enc " from Rebol!"
+
 ;; Decompress both compressed blocks again (using extension's command this time):
 text: to string! zstd/decompress join bin1 bin2
 ;== "Hello Zstandard from Rebol!"
@@ -41,14 +43,13 @@ text: to string! zstd/read :dec ;; Resolve decompressed data
 ;== "Hello Zstandard from Rebol!"
 ```
 
-Using this streaming API, you can write functions like these:
+### Example: file helpers
+These (basic) examples show how to build file-level utilities on top of the streaming API.
 ```rebol
 compress-file: function[file][
     src: open/read file                 ;; input file
-    out: open/new/write join file %.br  ;; output file
+    out: open/new/write join file %.zst ;; output file
     enc: zstd/make-encoder/level 6      ;; initialize Zstandard encoder
-    enc/size-hint: size? src
-    enc/mode: 1 ;= text input
     chunk-size: 65536
     while [not finish][
         chunk: copy/part src chunk-size
