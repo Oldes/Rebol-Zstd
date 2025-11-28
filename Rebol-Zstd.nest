@@ -170,13 +170,13 @@ eggs: [
 	]
 	#if Linux? [
 		"Rebol Zstd extension:linux_x64" [
-			name: %brotli-linux-x64
+			name: %zstd-linux-x64
 			:r3-extension
 			:zstd-src
 			:target-x64
 		]
 		"Rebol Zstd extension: linux_arm64" [
-			name: %brotli-linux-arm64
+			name: %zstd-linux-arm64
 			:r3-extension
 			:zstd-src
 			:target-arm64
