@@ -63,8 +63,6 @@ unless all [
     handle? zstd/write :enc text ;; feed some data
     bin3:   zstd/write :enc none ;; finish using none value
     ? bin3
- ;   error? try [zstd/write :enc "aaa"]  ;; writing to the already finalized encoder is not allowed!
- ;   error? try [zstd/read  :enc ]       ;; reading from the already finalized encoder is not allowed!
     print ["compressed size:" length? bin3]
     str3:   to string! decompress bin3 'zstd
     ? str3
@@ -77,11 +75,11 @@ unless all [
 ;-----------------------------------------------------------------------
 print-horizontal-line
 print as-yellow "Streaming using short inputs."
+;; It is possible to reuse previous handle (when it was finished)
 unless all [
-    ;enc: zstd/make-encoder   ;; Initialize the Zstdandard encoder state handle
     zstd/write :enc "Hello"  ;; Process some input data
     zstd/write :enc " "
-    zstd/write :enc "Zstdandard"
+    zstd/write :enc "Zstandard"
     ;; When there is enough data to compress,
     ;; use `read` to finish the current data block and get the encoded chunk
     bin1: zstd/read :enc
@@ -93,7 +91,7 @@ unless all [
     ? bin2
     str: to string! zstd/decompress join bin1 bin2
     ? str
-    equal? str "Hello Zstdandard from Rebol!"
+    equal? str "Hello Zstandard from Rebol!"
 ][
     print as-red "Failed to compress short inputs using streaming API!"
     ++ errors
