@@ -67,7 +67,7 @@ enum ma_type_words {W_TYPE_0
 typedef int (*MyCommandPointer)(RXIFRM *frm, void *ctx);
 
 #define ZSTD_EXT_INIT_CODE \
-	"REBOL [Title: \"Rebol Zstd Extension\" Name: zstd Type: module Version: 0.1.0 Needs: 3.20.5 Author: Oldes Date: 28-Nov-2025/16:14:53 License: MIT Url: https://github.com/Oldes/Rebol-Zstd]\n"\
+	"REBOL [Title: \"Rebol Zstd Extension\" Name: zstd Type: module Version: 0.1.0 Needs: 3.20.5 Author: Oldes Date: 28-Nov-2025/17:15:53 License: MIT Url: https://github.com/Oldes/Rebol-Zstd]\n"\
 	"init-words: command [args [block!] type [block!]]\n"\
 	"version: command [\"Native Zstd version\"]\n"\
 	"compress: command [\"Compress data using Zstandard\" data [binary! any-string!] \"Input data to compress.\" /part \"Limit the input data to a given length.\" length [integer!] \"Length of input data.\" /level quality [integer!] \"Compression level from 1 to 22.\"]\n"\
