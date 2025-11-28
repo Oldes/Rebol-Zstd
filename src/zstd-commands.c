@@ -371,14 +371,14 @@ COMMAND cmd_write(RXIFRM *frm, void *ctx) {
 			buffer = hob->series = RL_MAKE_BINARY((REBLEN)inBuffer.size);
 		}
 		tail = SERIES_TAIL(buffer);
-		outBuffer.size = SERIES_REST(buffer) - tail;
+		outBuffer.size = SERIES_REST(buffer);
 
-		if (outBuffer.size < inBuffer.size) {
+		if ((outBuffer.size - tail) < inBuffer.size) {
 			RL_EXPAND_SERIES(buffer, tail, SERIES_REST(buffer));
 			SERIES_TAIL(buffer) = tail;
-			outBuffer.size = SERIES_REST(buffer) - tail;
+			outBuffer.size = SERIES_REST(buffer);
 		}
-		outBuffer.dst = BIN_TAIL(buffer);
+		outBuffer.dst = BIN_HEAD(buffer);
 		debug_print("input length: %zu available_out: %zu \n", inBuffer.size - inBuffer.pos, outBuffer.size - outBuffer.pos);
 	}
 	
@@ -421,12 +421,15 @@ COMMAND cmd_write(RXIFRM *frm, void *ctx) {
 		}
 	}
 	else if (inBuffer.size > 0) {
+		// decompress...
 		ZSTD_DStream *state = (ZSTD_DStream*)hob->handle;
 		while(1) {
+			debug_print("inBuffer.pos: %zu inBuffer.size: %zu outBuffer.size: %zu pos: %zu\n", inBuffer.pos, inBuffer.size, outBuffer.size, outBuffer.pos);
 			result = ZSTD_decompressStream(state, &outBuffer, &inBuffer);
 			debug_print("zstd compress result: %zu out.pos: %zu in: %zu %zu\n", result, outBuffer.pos, inBuffer.size, inBuffer.pos);
 			if (ZSTD_isError(result)) RETURN_ERROR(ERR_NO_DECOMPRESS);
 			SERIES_TAIL(buffer) = (REBLEN)outBuffer.pos;
+			if (inBuffer.pos == inBuffer.size) break;
 			// If the output buffer is full, resize it
 			if (outBuffer.pos == outBuffer.size) {
 				RL_EXPAND_SERIES(buffer, AT_TAIL, outBuffer.pos);
@@ -434,7 +437,6 @@ COMMAND cmd_write(RXIFRM *frm, void *ctx) {
 				outBuffer.dst = BIN_HEAD(buffer);
 				outBuffer.size = SERIES_AVAIL(buffer);
 			}
-			if (inBuffer.pos == inBuffer.size) break;
 		}
 	}
 

@@ -32,6 +32,13 @@ bin2: zstd/write/finish :enc " from Rebol!"
 ;; Decompress both compressed blocks again (using extension's command this time):
 text: to string! zstd/decompress join bin1 bin2
 ;== "Hello Zstandard from Rebol!"
+
+;; Or using streaming API:
+dec: zstd/make-decoder   ;; Initialize the Zstandard decoder state handle
+zstd/write :dec bin1     ;; Feed some compressed chunks
+zstd/write :dec bin2
+text: to string! zstd/read :dec ;; Resolve decompressed data
+;== "Hello Zstandard from Rebol!"
 ```
 
 Using this streaming API, you can write functions like these:

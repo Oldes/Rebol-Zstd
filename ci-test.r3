@@ -92,8 +92,23 @@ unless all [
     str: to string! zstd/decompress join bin1 bin2
     ? str
     equal? str "Hello Zstandard from Rebol!"
+
+    ;; Or using streaming API...
+    dec: zstd/make-decoder
+    zstd/write :dec bin1
+    zstd/write :dec bin2
+    str: to string! zstd/read :dec
+    ? str
+    equal? str "Hello Zstandard from Rebol!"
+
+    ;; Or using streaming API with write/finish
+    ;; NOTE: it is possible to reuse the decoder
+    zstd/write :dec bin1
+    str: to string! zstd/write/finish :dec bin2
+    ? str
+    equal? str "Hello Zstandard from Rebol!"
 ][
-    print as-red "Failed to compress short inputs using streaming API!"
+    print as-red "Failed to compress/decompress short inputs using streaming API!"
     ++ errors
 ]
 ;-----------------------------------------------------------------------
