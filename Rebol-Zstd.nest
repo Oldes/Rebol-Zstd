@@ -140,18 +140,29 @@ eggs: [
 			cmd %_static_x64/ "cmake ../zstd/ -DCMAKE_BUILD_TYPE=Release -DBUILD_SHARED_LIBS=OFF"
 			cmd %_static_x64/ {cmake --build . --config release -j 8}
 		]
+		"Make Zstd static library (cmake) - arm86" [
+			arch: arm64
+			name: %static-lib-arm64
+			cmd %_static_arm64/ "cmake ../zstd/ -A ARM64 -DCMAKE_BUILD_TYPE=Release -DBUILD_SHARED_LIBS=OFF"
+			cmd %_static_arm64/ {cmake --build . --config release -j 8}
+		]
 		"Rebol Zstd extension: win32_x86" [
 			name: %zstd-windows-x86
 			:target-x86
 			:r3-extension
+			library: %_static_x86\build\cmake\lib\Release\zstd_static
 		]
 		"Rebol Zstd extension: win32_x64" [
 			name: %zstd-windows-x64
 			:target-x64
 			:r3-extension
-			libraries: [
-				%_static_x64\build\cmake\lib\Release\zstd_static
-			]
+			library: %_static_x64\build\cmake\lib\Release\zstd_static
+		]
+		"Rebol Zstd extension: arm64" [
+			name: %zstd-windows-arm64
+			:target-arm64
+			:r3-extension
+			library: %_static_arm64\build\cmake\lib\Release\zstd_static
 		]
 	]
 	#if macOS? [
@@ -169,6 +180,12 @@ eggs: [
 		]
 	]
 	#if Linux? [
+		"Rebol Zstd extension:linux_x86" [
+			name: %zstd-linux-x86
+			:r3-extension
+			:zstd-src
+			:target-x86
+		]
 		"Rebol Zstd extension:linux_x64" [
 			name: %zstd-linux-x64
 			:r3-extension
