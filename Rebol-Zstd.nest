@@ -3,9 +3,9 @@
 ;-  (/uOu\)  https://github.com/Siskin-framework/Builder/                       
 ;-===="="=======================================================================
 
-github: facebook/zstd
+github: facebook/zstd /v1.5.7
 
-version: 0.1.0
+version: 1.5.7
 
 compiler: clang
 arch:     x64
@@ -14,190 +14,257 @@ optimize: 2
 ;define: USE_TRACES
 
 ;- options common for all Rebol extensions ----------------------
-flag:   shared
-
 #if Windows? [
-	define: _CRT_SECURE_NO_WARNINGS
 	define: TO_WINDOWS
+	define: _CRT_SECURE_NO_WARNINGS
+	set-env CMAKE_GEN: {-G "Visual Studio 17 2022"}
+]
+#if macOS?   [
+	define: TO_OSX
+	define: HAS_BOOL
+	set-env CMAKE_GEN: ""
 ]
 #if Linux? [
+	define: TO_LINUX
 	compiler: gcc
+	set-env CMAKE_GEN: ""
+	cflags: -fvisibility=hidden
 ]
 
+define: ENDIAN_LITTLE
+;; Selects the amalgamated `rebol-extension.h` in the generated header.
+define: REB_EXT
+
 target-x86: [
+	;- On linux needs:  sudo apt install gcc-multilib g++-multilib
 	arch: x86
+	set-env SISKIN_INSTALL_PREFIX: "$SISKIN_INSTALL/x86/$INSTALL_SUFFIX"
+	#if macOS?   [ fail "It is not possible to make 32bit build on macos" ]
+	#if Posix?   [
+		set CMAKE_ARCH: "-DCMAKE_C_FLAGS=-m32 -DCMAKE_CXX_FLAGS=-m32"
+		include: %$SISKIN_INSTALL_PREFIX/include/
+		library: %$SISKIN_INSTALL_PREFIX/lib/
+	]
+	#if Windows? [
+		flags: "-arch x86_64"
+		include: %$SISKIN_INSTALL_PREFIX/include/
+		library: %$SISKIN_INSTALL_PREFIX/Win32/vc17/lib/
+		set CMAKE_ARCH: "-A Win32"
+	]
+	set CMAKE_ARCH: [
+		"$CMAKE_ARCH"
+		"-DCMAKE_INSTALL_PREFIX=$SISKIN_INSTALL_PREFIX"
+	]
 ]
 target-x64: [
 	arch: x64
+	set-env SISKIN_INSTALL_PREFIX: "$SISKIN_INSTALL/x64/$INSTALL_SUFFIX"
 	defines: [
 		_FILE_OFFSET_BITS=64
-		__LP64__       ; has long (integer) 64 bits
+		__LP64__ ; has long (integer) 64 bits
 	]
-	#if macOS?   [ flag: "-arch x86_64" ]
+	#if Windows? [ set CMAKE_ARCH: "-A x64" ]
+	#if Posix?   [ set CMAKE_ARCH: ""]
+	#if macOS?   [
+		flags: ["-arch x86_64"] 
+		set CMAKE_ARCH: [
+			"-DCMAKE_OSX_SYSROOT=macosx"
+			"-DCMAKE_OSX_ARCHITECTURES=x86_64"
+			"-DCMAKE_APPLE_SILICON_PROCESSOR=x86_64" ;; make CMake treat the build as x86_64, not the arm64 host
+			"-DCMAKE_OSX_DEPLOYMENT_TARGET=10.9"
+		]
+	]
+	#if Posix?   [
+		include: %$SISKIN_INSTALL_PREFIX/include/
+		library: %$SISKIN_INSTALL_PREFIX/lib/
+	]
+	#if Windows? [
+		include: %$SISKIN_INSTALL_PREFIX/include/
+		library: %$SISKIN_INSTALL_PREFIX/x64/vc17/lib/
+	]
+	set CMAKE_ARCH: [
+		"$CMAKE_ARCH"
+		"-DCMAKE_INSTALL_PREFIX=$SISKIN_INSTALL_PREFIX"
+	]
 ]
 target-arm64: [
 	arch: arm64
-	#if Linux? [
-		flag: "-arch arm64"
-	]
-	#if macOS? [
-		flag: "-target arm64-apple-darwin"
-	]
+	set-env SISKIN_INSTALL_PREFIX: "$SISKIN_INSTALL/arm64/$INSTALL_SUFFIX"
 	define: _FILE_OFFSET_BITS=64
-	define: __LP64__   ; has long (integer) 64 bits
+	define: __LP64__ ; has long (integer) 64 bits
 	define: __arm64__
-]
-target-armv7: [
-	arch: armv7
-	flag: "-march=armv7"
+	#if Posix? [
+		#either macOS? [
+			flags: "-target arm64-apple-darwin"
+			set CMAKE_ARCH: [
+				"-DCMAKE_OSX_SYSROOT=macosx"
+				"-DCMAKE_OSX_ARCHITECTURES=arm64"
+				"-DCMAKE_OSX_DEPLOYMENT_TARGET=11.0"
+			]
+		][
+			;- Needs:  sudo apt install gcc-aarch64-linux-gnu g++-aarch64-linux-gnu
+			set CMAKE_ARCH: [
+				"-DCMAKE_SYSTEM_NAME=Linux"
+				"-DCMAKE_SYSTEM_PROCESSOR=aarch64"
+				"-DCMAKE_C_COMPILER=aarch64-linux-gnu-gcc"
+				"-DCMAKE_CXX_COMPILER=aarch64-linux-gnu-g++"
+			]
+		]
+		include: %$SISKIN_INSTALL_PREFIX/include/
+		library: %$SISKIN_INSTALL_PREFIX/lib/
+	]
+	#if Windows? [
+		set CMAKE_ARCH: "-A arm64" 
+		include: %$SISKIN_INSTALL_PREFIX/include/
+		library: %$SISKIN_INSTALL_PREFIX/aarch64/vc17/lib/
+	]
+	set CMAKE_ARCH: [
+		"$CMAKE_ARCH"
+		"-DCMAKE_INSTALL_PREFIX=$SISKIN_INSTALL_PREFIX"
+	]
 ]
 ;----------------------------------------------------------------
 
 
+;----------------------------------------------------------------
+;- extension sources are built out of the Rebol tree -------------
+;; Selects the amalgamated `rebol-extension.h` in the generated header.
+define: REB_EXT
+
 r3-extension: [
-	flags:  shared
-	include: %zstd/lib
+	library: %zstd
+	flags: shared
+	strip: on
 	source: %src/
-
-	strip:  on
-
 	files: only [
+		%zstd.c
 		%zstd-commands.c
-		%zstd-commands-table.c
-		%zstd-rebol-extension.c
+		%gen-zstd.c
 	]
 	#if macOS? [
-		lflags:  [-dynamiclib]
-		flag:    -mmacosx-version-min=10.9
 		compiler: clang
+		lflag:  "-dynamiclib"
+		cflag:  "-mmacosx-version-min=10.9"
+		;; Export only the extension entry points.
+		lflag: "-Wl,-exported_symbol,_RX_Init -Wl,-exported_symbol,_RX_Quit -Wl,-exported_symbol,_RX_Call -Wl,-exported_symbol,_RX_Abi"
+		lflag: "-Wl,-dead_strip"
 	]
 	#if Posix? [
 		cflags: [-fPIC -pthread]
 		libraries: [%pthread]
 	]
+	#if Linux? [
+		lflag: "-Wl,--exclude-libs,ALL"
+		lflag: "-Wl,--gc-sections"
+	;	library: %dl
+		library: %pthread
+	]
 	#if Windows? [
 		upx: on
 	]
-	;- generate main extension header --------------------------------
-	do %src/zstd-rebol-extension.r3 
+	;- generate the extension header and command table -------------
+	;; Produces %src/gen-zstd.h and %src/gen-zstd.c, and refreshes
+	;; %README.md's reference section (make-extension.r3 0.7.0+ only
+	;; touches the README when --readme is passed).
+	do %make-extension.r3 [%src/zstd.reb --readme]
 ]
 
-zstd-src: [
-	source: %zstd/lib/
-	files: [
-	;	%common/debug.c
-		%common/entropy_common.c
-		%common/error_private.c
-		%common/fse_decompress.c
-		%common/pool.c
-		%common/threading.c
-		%common/xxhash.c
-		%common/zstd_common.c
-		%compress/fse_compress.c
-		%compress/hist.c
-		%compress/huf_compress.c
-		%compress/zstd_compress.c
-		%compress/zstd_compress_literals.c
-		%compress/zstd_compress_sequences.c
-		%compress/zstd_compress_superblock.c
-		%compress/zstd_double_fast.c
-		%compress/zstd_fast.c
-		%compress/zstd_lazy.c
-		%compress/zstd_ldm.c
-		%compress/zstd_opt.c
-		%compress/zstd_preSplit.c
-		%compress/zstdmt_compress.c
-		%decompress/huf_decompress.c
-		%decompress/huf_decompress_amd64.S
-		%decompress/zstd_ddict.c
-		%decompress/zstd_decompress.c
-		%decompress/zstd_decompress_block.c
-		%dictBuilder/cover.c
-		%dictBuilder/divsufsort.c
-		%dictBuilder/fastcover.c
-		%dictBuilder/zdict.c
-	;	%legacy/zstd_v01.c
-	;	%legacy/zstd_v02.c
-	;	%legacy/zstd_v03.c
-	;	%legacy/zstd_v04.c
-	;	%legacy/zstd_v05.c
-	;	%legacy/zstd_v06.c
-	;	%legacy/zstd_v07.c
+link-static: [
+	set-env CMAKE_LINK: [
+		"-DZSTD_BUILD_STATIC=ON"
+		"-DZSTD_BUILD_SHARED=OFF"
+	]
+	set-env INSTALL_SUFFIX: "static"
+]
+link-shared: [
+	set-env CMAKE_LINK: [
+		"-DZSTD_BUILD_STATIC=OFF"
+		"-DZSTD_BUILD_SHARED=ON"
+	]
+	set-env INSTALL_SUFFIX: "shared"
+]
+cmake-spec: [
+	set-env CMAKE_COMMON: [
+		"-DCMAKE_BUILD_TYPE=Release"
+		"-DCMAKE_VERBOSE_MAKEFILE=OFF"
+		"-DZSTD_PROGRAMS_LINK_SHARED=OFF"
+		"-DZSTD_BUILD_PROGRAMS=OFF"
+		"-DZSTD_BUILD_TESTS=OFF"
+		"-DZSTD_BUILD_CONTRIB=OFF"
+		"-DZSTD_LEGACY_SUPPORT=OFF"
+	;- Above defined based on target
+		"$CMAKE_ARCH"
+		"$CMAKE_LINK"
 	]
 ]
 
 eggs: [
-	#if Windows? [
-		"Make Zstd static library (cmake) - x86" [
-			arch: x86
-			name: %static-lib-x86
-			cmd %_static_x86/ "cmake ../zstd/ -A Win32 -DCMAKE_BUILD_TYPE=Release -DBUILD_SHARED_LIBS=OFF"
-			cmd %_static_x86/ {cmake --build . --config release -j 8}
-		]
-		"Make Zstd static library (cmake) - x64" [
-			arch: x64
-			name: %static-lib-x64
-			cmd %_static_x64/ "cmake ../zstd/ -DCMAKE_BUILD_TYPE=Release -DBUILD_SHARED_LIBS=OFF"
-			cmd %_static_x64/ {cmake --build . --config release -j 8}
-		]
-		"Make Zstd static library (cmake) - arm86" [
-			arch: arm64
-			name: %static-lib-arm64
-			cmd %_static_arm64/ "cmake ../zstd/ -A ARM64 -DCMAKE_BUILD_TYPE=Release -DBUILD_SHARED_LIBS=OFF"
-			cmd %_static_arm64/ {cmake --build . --config release -j 8}
-		]
-		"Rebol Zstd extension: win32_x86" [
-			name: %zstd-windows-x86
-			:target-x86
-			:r3-extension
-			library: %_static_x86\build\cmake\lib\Release\zstd_static
-		]
-		"Rebol Zstd extension: win32_x64" [
-			name: %zstd-windows-x64
-			:target-x64
-			:r3-extension
-			library: %_static_x64\build\cmake\lib\Release\zstd_static
-		]
-		"Rebol Zstd extension: arm64" [
-			name: %zstd-windows-arm64
-			:target-arm64
-			:r3-extension
-			library: %_static_arm64\build\cmake\lib\Release\zstd_static
-		]
+	"Cmake Zstd static - x86" [
+		name: %cmake-zstd-x86
+		:link-static :target-x86 :cmake-spec
+		cmd "cmake --fresh -B $SISKIN_TEMP/zstd-x86 $CMAKE_GEN -S zstd/build/cmake $CMAKE_COMMON"
+		cmd "cmake --build    $SISKIN_TEMP/zstd-x86 --config release -j 8"
+		cmd "cmake --install  $SISKIN_TEMP/zstd-x86 --config release"
 	]
-	#if macOS? [
-		"Rebol Zstd extension: macos_x64" [
-			name: %zstd-macos-x64
-			:r3-extension
-			:zstd-src
-			:target-x64
-		]
-		"Rebol Zstd extension: macos_arm64" [
-			name: %zstd-macos-arm64
-			:r3-extension
-			:zstd-src
-			:target-arm64
-		]
+	"Cmake Zstd static - x64" [
+		name: %cmake-zstd-x64
+		:link-static :target-x64 :cmake-spec
+		cmd "cmake --fresh -B $SISKIN_TEMP/zstd-x64 $CMAKE_GEN -S zstd/build/cmake $CMAKE_COMMON"
+		cmd "cmake --build    $SISKIN_TEMP/zstd-x64 --config release -j 8"
+		cmd "cmake --install  $SISKIN_TEMP/zstd-x64 --config release"
 	]
-	#if Linux? [
-		"Rebol Zstd extension:linux_x86" [
-			name: %zstd-linux-x86
-			:r3-extension
-			:zstd-src
-			:target-x86
-		]
-		"Rebol Zstd extension:linux_x64" [
-			name: %zstd-linux-x64
-			:r3-extension
-			:zstd-src
-			:target-x64
-		]
-		"Rebol Zstd extension: linux_arm64" [
-			name: %zstd-linux-arm64
-			:r3-extension
-			:zstd-src
-			:target-arm64
-		]
+	"Cmake Zstd static - arm64" [
+		name: %cmake-zstd-arm64
+		:link-static :target-arm64 :cmake-spec
+		cmd "cmake --fresh -B $SISKIN_TEMP/zstd-arm64 $CMAKE_GEN -S zstd/build/cmake $CMAKE_COMMON"
+		cmd "cmake --build    $SISKIN_TEMP/zstd-arm64 --config release -j 8"
+		cmd "cmake --install  $SISKIN_TEMP/zstd-arm64 --config release"
+	]
+
+	"Rebol Zstd static extension: x86" [
+		name: %zstd-x86
+		:link-static :target-x86 :r3-extension
+	]
+	"Rebol Zstd static extension: x64" [
+		name: %zstd-x64
+		:link-static :target-x64 :r3-extension
+	]
+	"Rebol Zstd static extension: arm64" [
+		name: %zstd-arm64
+		:link-static :target-arm64 :r3-extension
+	]
+
+	"Cmake Zstd shared - x86" [
+		name: %cmake-zstd-shared-x86
+		:link-shared :target-x86 :cmake-spec
+		cmd "cmake --fresh -B $SISKIN_TEMP/zstd-x86-shared $CMAKE_GEN -S zstd/build/cmake $CMAKE_COMMON"
+		cmd "cmake --build    $SISKIN_TEMP/zstd-x86-shared --config release -j 8"
+		cmd "cmake --install  $SISKIN_TEMP/zstd-x86-shared --config release"
+	]
+	"Cmake Zstd shared - x64" [
+		name: %cmake-zstd-shared-x64
+		:link-shared :target-x64 :cmake-spec
+		cmd "cmake --fresh -B $SISKIN_TEMP/zstd-x64-shared $CMAKE_GEN -S zstd/build/cmake $CMAKE_COMMON"
+		cmd "cmake --build    $SISKIN_TEMP/zstd-x64-shared --config release -j 8"
+		cmd "cmake --install  $SISKIN_TEMP/zstd-x64-shared --config release"
+	]
+	"Cmake Zstd shared - arm64" [
+		name: %cmake-zstd-shared-arm64
+		:link-shared :target-arm64 :cmake-spec
+		cmd "cmake --fresh -B $SISKIN_TEMP/zstd-arm64-shared $CMAKE_GEN -S zstd/build/cmake $CMAKE_COMMON"
+		cmd "cmake --build    $SISKIN_TEMP/zstd-arm64-shared --config release -j 8"
+		cmd "cmake --install  $SISKIN_TEMP/zstd-arm64-shared --config release"
+	]
+	"Rebol Zstd shared extension: x86" [
+		name: %zstd-shared-x86
+		:link-shared :target-x86 :r3-extension
+	]
+	"Rebol Zstd shared extension: x64" [
+		name: %zstd-shared-x64
+		:link-shared :target-x64 :r3-extension
+	]
+	"Rebol Zstd shared extension: arm64" [
+		name: %zstd-shared-arm64
+		:link-shared :target-arm64 :r3-extension
 	]
 ]
-

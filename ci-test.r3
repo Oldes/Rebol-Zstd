@@ -3,11 +3,24 @@ Rebol [
 ]
 
 print ["Running test on Rebol build:" mold to-block system/build]
+system/options/quiet: false
+system/options/log/rebol: 4
 
 ;; make sure that we load a fresh extension
 try [system/modules/zstd: none]
-;; use current directory as a modules location
-system/options/modules: what-dir
+
+CI?: any [
+    "true" = get-env "CI"
+    "true" = get-env "GITHUB_ACTIONS"
+    "true" = get-env "TRAVIS"
+    "true" = get-env "CIRCLECI"
+    "true" = get-env "GITLAB_CI"
+]
+
+if modules-dir: get-env 'REBOL_MODULES_DIR [
+    system/options/modules: to-real-file modules-dir
+    ls (system/options/modules)
+]
 
 ;; import the extension
 zstd: import 'zstd
@@ -20,11 +33,11 @@ print ["Zstd version:" zstd/version]
 
 errors: 0
 file: %src/rebol-extension.h ;; File to use as a source to compress.
-text: to string! read file
+text: read/string file
 sha1: checksum text 'sha1
 
 ;-----------------------------------------------------------------------
-print-horizontal-line
+print-hline
 print as-yellow "Basic de/compression using various qualities."
 for quality 1 22 1 [
     unless all [
@@ -35,7 +48,7 @@ for quality 1 22 1 [
     ][
         print [as-red "Failed to compress using quality:" quality]
         ++ errors
-    ] 
+    ]
 ]
 
 print as-yellow "Using short input..."
@@ -49,12 +62,12 @@ for quality 1 22 1 [
     ][
         print [as-red "Failed to de/compress short text using quality:" quality]
         ++ errors
-    ] 
+    ]
 ]
 
 
 ;-----------------------------------------------------------------------
-print-horizontal-line
+print-hline
 print as-yellow "Compress using streaming API."
 unless all [
     handle? enc: zstd/make-encoder
@@ -73,7 +86,7 @@ unless all [
     ++ errors
 ]
 ;-----------------------------------------------------------------------
-print-horizontal-line
+print-hline
 print as-yellow "Streaming using short inputs."
 ;; It is possible to reuse previous handle (when it was finished)
 unless all [
@@ -112,7 +125,7 @@ unless all [
     ++ errors
 ]
 ;-----------------------------------------------------------------------
-print-horizontal-line
+print-hline
 print as-yellow "Compress and decompress files in chunks."
 
 compress-file: function[file][
@@ -155,18 +168,19 @@ unless all [
 delete compressed-file
 
 ;-----------------------------------------------------------------------
-print-horizontal-line
-print as-yellow "Validate, that support is newly mentioned in HTTP requests."
-if none? attempt [
-    ? system/schemes/http/headers/Accept-Encoding
-    find system/schemes/http/headers/Accept-Encoding ",zstd"
-][
-    print as-red "Zstd not found in the HTTP's Accept-Encoding."
-    ++ errors
+if find system/schemes 'http [
+    print-hline
+    print as-yellow "Validate, that support is newly mentioned in HTTP requests."
+    if none? attempt [
+        ? system/schemes/http/headers/Accept-Encoding
+        find system/schemes/http/headers/Accept-Encoding ",zstd"
+    ][
+        print as-red "Zstd not found in the HTTP's Accept-Encoding."
+        ++ errors
+    ]
 ]
-
 ;-----------------------------------------------------------------------
-print-horizontal-line
+print-hline
 
 prin as-yellow "TEST RESULT: "
 print either errors == 0 [as-green "OK"][as-red "FAILED!"]

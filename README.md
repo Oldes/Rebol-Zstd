@@ -115,3 +115,12 @@ Feed data into a Zstandard streaming codec.
 Retrieve pending encoded or decoded data from the stream.
 * `codec` `[handle!]` Zstandard encoder or decoder handle.
 
+
+## Other extension values:
+```rebol
+attempt [
+	unless find system/schemes/http/headers/Accept-Encoding "zstd" [
+		append system/schemes/http/headers/Accept-Encoding ",zstd"
+	]
+]
+```
