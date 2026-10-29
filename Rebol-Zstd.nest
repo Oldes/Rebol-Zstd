@@ -132,7 +132,6 @@ target-arm64: [
 define: REB_EXT
 
 r3-extension: [
-	library: %zstd
 	flags: shared
 	strip: on
 	source: %src/
@@ -175,6 +174,9 @@ link-static: [
 		"-DZSTD_BUILD_SHARED=OFF"
 	]
 	set-env INSTALL_SUFFIX: "static"
+	#either windows? [
+		library: %zstd_static
+	][	library: %zstd]
 ]
 link-shared: [
 	set-env CMAKE_LINK: [
@@ -182,6 +184,7 @@ link-shared: [
 		"-DZSTD_BUILD_SHARED=ON"
 	]
 	set-env INSTALL_SUFFIX: "shared"
+	library: %zstd
 ]
 cmake-spec: [
 	set-env CMAKE_COMMON: [
