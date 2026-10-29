@@ -42,13 +42,9 @@ target-x86: [
 	#if macOS?   [ fail "It is not possible to make 32bit build on macos" ]
 	#if Posix?   [
 		set CMAKE_ARCH: "-DCMAKE_C_FLAGS=-m32 -DCMAKE_CXX_FLAGS=-m32"
-		include: %$SISKIN_INSTALL_PREFIX/include/
-		library: %$SISKIN_INSTALL_PREFIX/lib/
 	]
 	#if Windows? [
 		flags: "-arch x86_64"
-		include: %$SISKIN_INSTALL_PREFIX/include/
-		library: %$SISKIN_INSTALL_PREFIX/Win32/vc17/lib/
 		set CMAKE_ARCH: "-A Win32"
 	]
 	set CMAKE_ARCH: [
@@ -73,14 +69,6 @@ target-x64: [
 			"-DCMAKE_APPLE_SILICON_PROCESSOR=x86_64" ;; make CMake treat the build as x86_64, not the arm64 host
 			"-DCMAKE_OSX_DEPLOYMENT_TARGET=10.9"
 		]
-	]
-	#if Posix?   [
-		include: %$SISKIN_INSTALL_PREFIX/include/
-		library: %$SISKIN_INSTALL_PREFIX/lib/
-	]
-	#if Windows? [
-		include: %$SISKIN_INSTALL_PREFIX/include/
-		library: %$SISKIN_INSTALL_PREFIX/x64/vc17/lib/
 	]
 	set CMAKE_ARCH: [
 		"$CMAKE_ARCH"
@@ -110,13 +98,9 @@ target-arm64: [
 				"-DCMAKE_CXX_COMPILER=aarch64-linux-gnu-g++"
 			]
 		]
-		include: %$SISKIN_INSTALL_PREFIX/include/
-		library: %$SISKIN_INSTALL_PREFIX/lib/
 	]
 	#if Windows? [
 		set CMAKE_ARCH: "-A arm64" 
-		include: %$SISKIN_INSTALL_PREFIX/include/
-		library: %$SISKIN_INSTALL_PREFIX/aarch64/vc17/lib/
 	]
 	set CMAKE_ARCH: [
 		"$CMAKE_ARCH"
@@ -135,6 +119,8 @@ r3-extension: [
 	flags: shared
 	strip: on
 	source: %src/
+	include: %$SISKIN_INSTALL_PREFIX/include/
+	library: %$SISKIN_INSTALL_PREFIX/lib/
 	files: only [
 		%zstd.c
 		%zstd-commands.c
