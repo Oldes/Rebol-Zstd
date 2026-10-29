@@ -11,7 +11,7 @@ on:
 
 jobs:
   windows:
-    runs-on: windows-latest
+    runs-on: windows-2022
     steps:
     - name: Checkout repository
       uses: actions/checkout@v5
@@ -32,7 +32,7 @@ jobs:
       run: ./siskin Rebol-Zstd.nest cmake-zstd-x64
 
     - name: Build 64bit Rebol/Zstd extension
-      run: ./siskin Rebol-Zstd.nest -o ./zstd-abi1-x64.rebx --msvc zstd-x64
+      run: ./siskin Rebol-Zstd.nest -o ./zstd-x64.rebx --msvc zstd-x64
 
     - name: Minimal Rebol/Zstd extension test
       run:  ./siskin --script ci-test.r3
@@ -64,7 +64,7 @@ jobs:
       run: ./siskin Rebol-Zstd.nest cmake-zstd-x64
 
     - name: Build 64bit Rebol/Zstd extension
-      run: ./siskin Rebol-Zstd.nest -o ./zstd-abi1-x64.rebx --gzip zstd-x64
+      run: ./siskin Rebol-Zstd.nest -o ./zstd-x64.rebx --gzip zstd-x64
 
     - name: Minimal Rebol/Zstd extension test
       run:  ./siskin --script ci-test.r3
@@ -96,7 +96,7 @@ jobs:
       run: ./siskin Rebol-Zstd.nest cmake-zstd-arm64
 
     - name: Build arm64 Rebol/Zstd extension
-      run: ./siskin Rebol-Zstd.nest -o ./zstd-abi1-arm64.rebx --gzip zstd-arm64
+      run: ./siskin Rebol-Zstd.nest -o ./zstd-arm64.rebx --gzip zstd-arm64
 
     - name: Minimal Rebol/Zstd extension test
       run:  ./siskin --script ci-test.r3

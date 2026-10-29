@@ -9,3 +9,6 @@
 !/LICENSE
 !/ci-test.r3
 !/test.r3
+!/make-extension.r3
+*/gen-*
+.DS_Store
