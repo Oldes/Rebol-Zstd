@@ -38,7 +38,8 @@ define: REB_EXT
 target-x86: [
 	;- On linux needs:  sudo apt install gcc-multilib g++-multilib
 	arch: x86
-	set-env SISKIN_INSTALL_PREFIX: "$SISKIN_INSTALL/x86/$INSTALL_SUFFIX"
+	set ARCH_NAME: "x86"
+	set SISKIN_INSTALL_PREFIX: "$SISKIN_INSTALL/$INSTALL_SUFFIX/x86"
 	#if macOS?   [ fail "It is not possible to make 32bit build on macos" ]
 	#if Posix?   [
 		set CMAKE_ARCH: "-DCMAKE_C_FLAGS=-m32 -DCMAKE_CXX_FLAGS=-m32"
@@ -47,14 +48,11 @@ target-x86: [
 		flags: "-arch x86_64"
 		set CMAKE_ARCH: "-A Win32"
 	]
-	set CMAKE_ARCH: [
-		"$CMAKE_ARCH"
-		"-DCMAKE_INSTALL_PREFIX=$SISKIN_INSTALL_PREFIX"
-	]
 ]
 target-x64: [
 	arch: x64
-	set-env SISKIN_INSTALL_PREFIX: "$SISKIN_INSTALL/x64/$INSTALL_SUFFIX"
+	set ARCH_NAME: "x64"
+	set SISKIN_INSTALL_PREFIX: "$SISKIN_INSTALL/$INSTALL_SUFFIX/x64"
 	defines: [
 		_FILE_OFFSET_BITS=64
 		__LP64__ ; has long (integer) 64 bits
@@ -70,14 +68,11 @@ target-x64: [
 			"-DCMAKE_OSX_DEPLOYMENT_TARGET=10.9"
 		]
 	]
-	set CMAKE_ARCH: [
-		"$CMAKE_ARCH"
-		"-DCMAKE_INSTALL_PREFIX=$SISKIN_INSTALL_PREFIX"
-	]
 ]
 target-arm64: [
 	arch: arm64
-	set-env SISKIN_INSTALL_PREFIX: "$SISKIN_INSTALL/arm64/$INSTALL_SUFFIX"
+	set ARCH_NAME: "arm64"
+	set SISKIN_INSTALL_PREFIX: "$SISKIN_INSTALL/$INSTALL_SUFFIX/arm64"
 	define: _FILE_OFFSET_BITS=64
 	define: __LP64__ ; has long (integer) 64 bits
 	define: __arm64__
@@ -101,10 +96,6 @@ target-arm64: [
 	]
 	#if Windows? [
 		set CMAKE_ARCH: "-A arm64" 
-	]
-	set CMAKE_ARCH: [
-		"$CMAKE_ARCH"
-		"-DCMAKE_INSTALL_PREFIX=$SISKIN_INSTALL_PREFIX"
 	]
 ]
 ;----------------------------------------------------------------
@@ -155,25 +146,28 @@ r3-extension: [
 ]
 
 link-static: [
-	set-env CMAKE_LINK: [
+	set CMAKE_LINK: [
 		"-DZSTD_BUILD_STATIC=ON"
 		"-DZSTD_BUILD_SHARED=OFF"
 	]
-	set-env INSTALL_SUFFIX: "static"
+	set INSTALL_SUFFIX: "static"
+	set DIR_SUFFIX: ""
 	#either windows? [
 		library: %zstd_static
 	][	library: %zstd]
 ]
 link-shared: [
-	set-env CMAKE_LINK: [
+	set CMAKE_LINK: [
 		"-DZSTD_BUILD_STATIC=OFF"
 		"-DZSTD_BUILD_SHARED=ON"
 	]
-	set-env INSTALL_SUFFIX: "shared"
+	set INSTALL_SUFFIX: "shared"
+	set DIR_SUFFIX: "-shared"
 	library: %zstd
 ]
-cmake-spec: [
-	set-env CMAKE_COMMON: [
+
+cmake-build: [
+	set CMAKE_COMMON: [
 		"-DCMAKE_BUILD_TYPE=Release"
 		"-DCMAKE_VERBOSE_MAKEFILE=OFF"
 		"-DZSTD_PROGRAMS_LINK_SHARED=OFF"
@@ -181,34 +175,24 @@ cmake-spec: [
 		"-DZSTD_BUILD_TESTS=OFF"
 		"-DZSTD_BUILD_CONTRIB=OFF"
 		"-DZSTD_LEGACY_SUPPORT=OFF"
+		"-DCMAKE_INSTALL_PREFIX=$SISKIN_INSTALL_PREFIX"
 	;- Above defined based on target
 		"$CMAKE_ARCH"
 		"$CMAKE_LINK"
+
 	]
+	cmd "cmake --fresh -B $SISKIN_TEMP/zstd-$ARCH_NAME$DIR_SUFFIX $CMAKE_GEN -S zstd/build/cmake $CMAKE_COMMON"
+	cmd "cmake --build    $SISKIN_TEMP/zstd-$ARCH_NAME$DIR_SUFFIX --config release -j 8"
+	cmd "cmake --install  $SISKIN_TEMP/zstd-$ARCH_NAME$DIR_SUFFIX --config release"
 ]
 
 eggs: [
-	"Cmake Zstd static - x86" [
-		name: %cmake-zstd-x86
-		:link-static :target-x86 :cmake-spec
-		cmd "cmake --fresh -B $SISKIN_TEMP/zstd-x86 $CMAKE_GEN -S zstd/build/cmake $CMAKE_COMMON"
-		cmd "cmake --build    $SISKIN_TEMP/zstd-x86 --config release -j 8"
-		cmd "cmake --install  $SISKIN_TEMP/zstd-x86 --config release"
-	]
-	"Cmake Zstd static - x64" [
-		name: %cmake-zstd-x64
-		:link-static :target-x64 :cmake-spec
-		cmd "cmake --fresh -B $SISKIN_TEMP/zstd-x64 $CMAKE_GEN -S zstd/build/cmake $CMAKE_COMMON"
-		cmd "cmake --build    $SISKIN_TEMP/zstd-x64 --config release -j 8"
-		cmd "cmake --install  $SISKIN_TEMP/zstd-x64 --config release"
-	]
-	"Cmake Zstd static - arm64" [
-		name: %cmake-zstd-arm64
-		:link-static :target-arm64 :cmake-spec
-		cmd "cmake --fresh -B $SISKIN_TEMP/zstd-arm64 $CMAKE_GEN -S zstd/build/cmake $CMAKE_COMMON"
-		cmd "cmake --build    $SISKIN_TEMP/zstd-arm64 --config release -j 8"
-		cmd "cmake --install  $SISKIN_TEMP/zstd-arm64 --config release"
-	]
+	"Cmake Zstd static - x86"  [ name: %cmake-zstd-x86          :link-static :target-x86   :cmake-build ]
+	"Cmake Zstd static - x64"  [ name: %cmake-zstd-x64          :link-static :target-x64   :cmake-build ]
+	"Cmake Zstd static - arm64"[ name: %cmake-zstd-arm64        :link-static :target-arm64 :cmake-build ]
+	"Cmake Zstd shared - x86"  [ name: %cmake-zstd-shared-x86   :link-shared :target-x86   :cmake-build ]
+	"Cmake Zstd shared - x64"  [ name: %cmake-zstd-shared-x64   :link-shared :target-x64   :cmake-build ]
+	"Cmake Zstd shared - arm64"[ name: %cmake-zstd-shared-arm64 :link-shared :target-arm64 :cmake-build ]
 
 	"Rebol Zstd static extension: x86" [
 		name: %zstd-x86
@@ -223,27 +207,6 @@ eggs: [
 		:link-static :target-arm64 :r3-extension
 	]
 
-	"Cmake Zstd shared - x86" [
-		name: %cmake-zstd-shared-x86
-		:link-shared :target-x86 :cmake-spec
-		cmd "cmake --fresh -B $SISKIN_TEMP/zstd-x86-shared $CMAKE_GEN -S zstd/build/cmake $CMAKE_COMMON"
-		cmd "cmake --build    $SISKIN_TEMP/zstd-x86-shared --config release -j 8"
-		cmd "cmake --install  $SISKIN_TEMP/zstd-x86-shared --config release"
-	]
-	"Cmake Zstd shared - x64" [
-		name: %cmake-zstd-shared-x64
-		:link-shared :target-x64 :cmake-spec
-		cmd "cmake --fresh -B $SISKIN_TEMP/zstd-x64-shared $CMAKE_GEN -S zstd/build/cmake $CMAKE_COMMON"
-		cmd "cmake --build    $SISKIN_TEMP/zstd-x64-shared --config release -j 8"
-		cmd "cmake --install  $SISKIN_TEMP/zstd-x64-shared --config release"
-	]
-	"Cmake Zstd shared - arm64" [
-		name: %cmake-zstd-shared-arm64
-		:link-shared :target-arm64 :cmake-spec
-		cmd "cmake --fresh -B $SISKIN_TEMP/zstd-arm64-shared $CMAKE_GEN -S zstd/build/cmake $CMAKE_COMMON"
-		cmd "cmake --build    $SISKIN_TEMP/zstd-arm64-shared --config release -j 8"
-		cmd "cmake --install  $SISKIN_TEMP/zstd-arm64-shared --config release"
-	]
 	"Rebol Zstd shared extension: x86" [
 		name: %zstd-shared-x86
 		:link-shared :target-x86 :r3-extension
