@@ -75,6 +75,8 @@ jobs:
     - name: Minimal Rebol/Zstd extension test
       run:  ./siskin --script ci-test.r3
 
+    - name: Prepare 32bit gcc
+      run: sudo apt install gcc-multilib g++-multilib
     - name: Build 32bit static Zstd library
       run: ./siskin Rebol-Zstd.nest cmake-zstd-x86
     - name: Build 32bit Rebol/Zstd extension
