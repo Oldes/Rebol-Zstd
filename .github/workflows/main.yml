@@ -45,10 +45,34 @@ jobs:
     - name: Build arm64 Rebol/Zstd extension
       run: ./siskin Rebol-Zstd.nest -o ./zstd-windows-arm64.rebx --msvc zstd-arm64
 
-    - uses: actions/upload-artifact@v6
+    - name: Upload unsigned artifact
+      id: upload-unsigned
+      uses: actions/upload-artifact@v6
       with:
-        name: Rebol-Zstd-Windows-CI-${{github.run_id}}
+        name: Rebol-Zstd-Windows-CI-${{github.run_id}}-unsigned
         path: ./*.rebx
+
+    - name: Sign with SignPath
+      if: github.event_name != 'pull_request'
+      uses: signpath/github-action-submit-signing-request@v2
+      with:
+        api-token: '${{ secrets.SIGNPATH_API_TOKEN }}'
+        organization-id: '${{ vars.SIGNPATH_ORGANIZATION_ID }}'
+        project-slug: '${{ vars.SIGNPATH_PROJECT_SLUG }}'
+        signing-policy-slug: 'test-signing'
+        #signing-policy-slug: ${{ github.event_name == 'workflow_dispatch' && 'release-signing' || 'test-signing' }}
+        artifact-configuration-slug: 'windows-rebx'
+        github-artifact-id: '${{ steps.upload-unsigned.outputs.artifact-id }}'
+        wait-for-completion: true
+        output-artifact-directory: './signed'
+
+    - name: Upload signed artifact
+      if: github.event_name != 'pull_request'
+      uses: actions/upload-artifact@v6
+      with:
+        name: Rebol-Zstd-Windows-CI-${{github.run_id}}-signed
+        path: ./signed/*.rebx
+
 
   linux:
     runs-on: ubuntu-latest
