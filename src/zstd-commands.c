@@ -298,7 +298,7 @@ COMMAND cmd_zstd_write(RXIFRM *frm, void *ctx) {
 				SERIES_TAIL(buffer) = (REBLEN)outBuffer.pos;
 				if (result == 0) break; // finished
 				if (ZSTD_isError(result)) RETURN_ERROR(ERR_NO_COMPRESS);
-				RL_EXPAND_SERIES(buffer, AT_TAIL, result);
+				RL_EXPAND_SERIES(buffer, AT_TAIL, (REBCNT)result);
 				outBuffer.dst = BIN_HEAD(buffer);
 				outBuffer.size = SERIES_REST(buffer);
 			}
@@ -311,7 +311,7 @@ COMMAND cmd_zstd_write(RXIFRM *frm, void *ctx) {
 				SERIES_TAIL(buffer) = (REBLEN)outBuffer.pos;
 				if (result == 0) break; // finished
 				if (ZSTD_isError(result)) RETURN_ERROR(ERR_NO_COMPRESS);
-				RL_EXPAND_SERIES(buffer, AT_TAIL, result);
+				RL_EXPAND_SERIES(buffer, AT_TAIL, (REBCNT)result);
 				outBuffer.dst = BIN_HEAD(buffer);
 				outBuffer.size = SERIES_REST(buffer);
 			}
@@ -329,7 +329,7 @@ COMMAND cmd_zstd_write(RXIFRM *frm, void *ctx) {
 			if (inBuffer.pos == inBuffer.size) break;
 			// If the output buffer is full, resize it
 			if (outBuffer.pos == outBuffer.size) {
-				RL_EXPAND_SERIES(buffer, AT_TAIL, outBuffer.pos);
+				RL_EXPAND_SERIES(buffer, AT_TAIL, (REBCNT)outBuffer.pos);
 				SERIES_TAIL(buffer) = (REBLEN)outBuffer.pos;
 				outBuffer.dst = BIN_HEAD(buffer);
 				outBuffer.size = SERIES_AVAIL(buffer);
@@ -383,7 +383,7 @@ COMMAND cmd_zstd_read(RXIFRM *frm, void *ctx) {
 			SERIES_TAIL(buffer) = (REBLEN)outBuffer.pos;
 			if (result == 0) break; // finished
 			if (ZSTD_isError(result)) RETURN_ERROR(ERR_NO_COMPRESS);
-			RL_EXPAND_SERIES(buffer, AT_TAIL, result);
+			RL_EXPAND_SERIES(buffer, AT_TAIL, (REBCNT)result);
 			outBuffer.dst = BIN_HEAD(buffer);
 			outBuffer.size = SERIES_REST(buffer);
 		}
