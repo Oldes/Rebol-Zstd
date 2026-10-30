@@ -33,18 +33,17 @@ print ["Zstd version:" zstd/version]
 
 errors: 0
 file: %src/rebol-extension.h ;; File to use as a source to compress.
-text: read/string file
-sha1: checksum text 'sha1
+data: read/binary file       ;; raw bytes, no deline, no decoding
+sha1: checksum data 'sha1
 
 ;-----------------------------------------------------------------------
 print-hline
 print as-yellow "Basic de/compression using various qualities."
 for quality 1 22 1 [
     unless all [
-        time: dt [bin: zstd/compress/level text :quality]
+        time: dt [bin: zstd/compress/level data :quality]
         print ["  quality:" quality "^-compressed size:" length? bin "time:" time]
-        str: to string! zstd/decompress bin
-        equal? text str
+        equal? data zstd/decompress bin
     ][
         print [as-red "Failed to compress using quality:" quality]
         ++ errors
@@ -73,13 +72,12 @@ unless all [
     handle? enc: zstd/make-encoder
     ? enc
     none?   zstd/read  :enc      ;; reading from encoder without data returns none
-    handle? zstd/write :enc text ;; feed some data
+    handle? zstd/write :enc data ;; feed some data
     bin3:   zstd/write :enc none ;; finish using none value
     ? bin3
     print ["compressed size:" length? bin3]
-    str3:   to string! decompress bin3 'zstd
-    ? str3
-    sha1 == checksum str3 'sha1
+    out:  decompress bin3 'zstd
+    sha1 == checksum out 'sha1
 
 ][
     print as-red "Failed to compress using streaming API!"
@@ -158,9 +156,7 @@ decompress-file: function[file][
 unless all [
     compressed-file: compress-file :file
     print ["compressed size:" size? compressed-file]
-    str4: to string! decompress-file :compressed-file
-    ? str4
-    equal? text str4
+    equal? data decompress-file :compressed-file
 ][
     print as-red "Failed to compress & decompress file."
     ++ errors
