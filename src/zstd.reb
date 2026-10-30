@@ -46,9 +46,6 @@ c-header: {
 #define NO_LIMIT ((REBCNT)-1)
 #endif
 
-#undef  RL_ABI_VERSION
-#define RL_ABI_VERSION 0
-
 extern REBCNT Handle_ZstdEncoder;
 extern REBCNT Handle_ZstdDecoder;
 
