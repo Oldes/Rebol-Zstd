@@ -1,7 +1,7 @@
 ////////////////////////////////////////////////////////////////////////
 // File: rebol-extension.h
 // Home: https://github.com/Oldes/Rebol3/
-// Date: 28-Sep-2026/21:35:42
+// Date: 30-Oct-2026/13:12:24
 // Note: This file is amalgamated from these sources:
 //
 //       reb-c.h
@@ -902,8 +902,8 @@ enum encoding_opts {
 ************************************************************************
 **
 **  Title: Extension Types (Isolators)
-**  Build: 3.22.10
-**  Date:  28-Sep-2026
+**  Build: 3.22.12
+**  Date:  28-Oct-2026
 **  File:  ext-types.h
 **
 **  AUTO-GENERATED FILE - Do not modify. (From: make-boot.reb)
@@ -948,12 +948,11 @@ enum REBOL_Ext_Types
 	RXT_BITSET,                   // 32
 	RXT_VECTOR,                   // 33
 	RXT_IMAGE,                    // 34
-	RXT_GOB = 47,                 // 35
-	RXT_OBJECT = 48,              // 36
-	RXT_MODULE,                   // 37
-	RXT_PORT,                     // 38
-	RXT_STRUCT = 54,              // 39
-	RXT_EVENT,                    // 40
+	RXT_OBJECT = 48,              // 35
+	RXT_MODULE,                   // 36
+	RXT_PORT,                     // 37
+	RXT_STRUCT = 54,              // 38
+	RXT_EVENT,                    // 39
     RXT_MAX
 };
 
@@ -1606,303 +1605,6 @@ enum {
 **
 ***********************************************************************/
 
-#pragma pack()
-//#include "reb-gob.h"
-/***********************************************************************
-**
-**  REBOL [R3] Language Interpreter and Run-time Environment
-**
-**  Copyright 2012 REBOL Technologies
-**  REBOL is a trademark of REBOL Technologies
-**
-**  Licensed under the Apache License, Version 2.0 (the "License");
-**  you may not use this file except in compliance with the License.
-**  You may obtain a copy of the License at
-**
-**  http://www.apache.org/licenses/LICENSE-2.0
-**
-**  Unless required by applicable law or agreed to in writing, software
-**  distributed under the License is distributed on an "AS IS" BASIS,
-**  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-**  See the License for the specific language governing permissions and
-**  limitations under the License.
-**
-************************************************************************
-**
-**  Summary: Graphical compositing objects
-**  Module:  reb-gob.h
-**  Author:  Carl Sassenrath
-**  Description:
-**		GOBs are lower-level graphics object used by the compositing
-**		and rendering system. Because a GUI can contain thousands of
-**		GOBs, they are designed and structured to be simple and small.
-**		Note that GOBs are also used for windowing.
-**	Warning:
-**		GOBs are allocated from a special pool and
-**		are accounted for by the standard garbage collector.
-**
-***********************************************************************/
-#ifndef REB_GOB_H
-#define REB_GOB_H
-
-//#include "reb-view.h"
-/***********************************************************************
-**
-**  REBOL [R3] Language Interpreter and Run-time Environment
-**
-**  Copyright 2012 REBOL Technologies
-**  REBOL is a trademark of REBOL Technologies
-**
-**  Additional code modifications and improvements Copyright 2012 Saphirion AG
-**
-**  Licensed under the Apache License, Version 2.0 (the "License");
-**  you may not use this file except in compliance with the License.
-**  You may obtain a copy of the License at
-**
-**  http://www.apache.org/licenses/LICENSE-2.0
-**
-**  Unless required by applicable law or agreed to in writing, software
-**  distributed under the License is distributed on an "AS IS" BASIS,
-**  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-**  See the License for the specific language governing permissions and
-**  limitations under the License.
-**
-************************************************************************
-**
-**  Title: Misc View related shared definitions
-**  Author: Richard Smolak 
-**
-************************************************************************
-**
-**  NOTE to PROGRAMMERS:
-**
-**    1. Keep code clear and simple.
-**    2. Document unusual code, reasoning, or gotchas.
-**    3. Use same style for code, vars, indent(4), comments, etc.
-**    4. Keep in mind Linux, OS X, BSD, big/little endian CPUs.
-**    5. Test everything, then test it again.
-**
-***********************************************************************/
-
-extern REBXYF log_size;
-extern REBXYF phys_size;
-
-#define LOG_COORD_X(p)	((p) * log_size.x)
-#define LOG_COORD_Y(p)	((p) * log_size.y)
-#define PHYS_COORD_X(p)	((p) * phys_size.x)
-#define PHYS_COORD_Y(p)	((p) * phys_size.y)
-
-typedef enum {
-	SM_SCREEN_NUM,
-	SM_SCREEN_WIDTH,
-	SM_SCREEN_HEIGHT,
-	SM_SCREEN_X,
-	SM_SCREEN_Y,
-	SM_VIRTUAL_SCREEN_WIDTH,
-	SM_VIRTUAL_SCREEN_HEIGHT,
-	SM_WORK_WIDTH,
-	SM_WORK_HEIGHT,
-	SM_TITLE_HEIGHT,
-	SM_SCREEN_DPI_X,
-	SM_SCREEN_DPI_Y,
-	SM_BORDER_WIDTH,
-	SM_BORDER_HEIGHT,
-	SM_BORDER_FIXED_WIDTH,
-	SM_BORDER_FIXED_HEIGHT,
-	SM_WINDOW_MIN_WIDTH,
-	SM_WINDOW_MIN_HEIGHT,
-	SM_WORK_X,
-	SM_WORK_Y
-} METRIC_TYPE;
-
-
-enum GOB_FLAGS {		// GOB attribute and option flags
-	GOBF_TOP = 0,		// Top level (window or output image)
-	GOBF_WINDOW,		// Window (parent is OS window reference)
-	GOBF_OPAQUE,		// Has no alpha
-	GOBF_STATIC,		// Does not change
-	GOBF_HIDDEN,		// Is hidden (e.g. hidden window)
-	GOBF_RESIZE,		// Can be resized
-	GOBF_NO_TITLE,		// Has window title
-	GOBF_NO_BORDER,		// Has window border
-	GOBF_DROPABLE,		// Let window receive drag and drop
-	GOBF_TRANSPARENT,	// Window is in transparent mode
-	GOBF_POPUP,			// Window is a popup (with owner window)
-	GOBF_MODAL,			// Modal event filtering
-	GOBF_ON_TOP,		// The window is always on top
-	GOBF_ACTIVE,		// Window is active
-	GOBF_MINIMIZE,		// Window is minimized
-	GOBF_MAXIMIZE,		// Window is maximized
-	GOBF_RESTORE,		// Window is restored
-	GOBF_FULLSCREEN,	// Window is fullscreen
-};
-
-enum GOB_STATE {		// GOB state flags
-	GOBS_OPEN = 0,		// Window is open
-	GOBS_ACTIVE,		// Window is active
-	GOBS_NEW,			// Gob is new to pane (old-offset, old-size wrong)
-};
-
-enum GOB_TYPES {		// Types of content
-	GOBT_NONE = 0,
-	GOBT_COLOR,
-	GOBT_IMAGE,
-	GOBT_WIDGET,       // must be between IMAGE and STRING so GC can mark its content!
-	GOBT_STRING,
-	GOBT_DRAW,
-	GOBT_TEXT,
-	GOBT_EFFECT,
-	GOBT_MAX
-};
-
-enum GOB_DTYPES {		// Userdata types
-	GOBD_NONE = 0,
-	GOBD_OBJECT,
-	GOBD_BLOCK,
-	GOBD_STRING,
-	GOBD_BINARY,
-	GOBD_RESV,			// unicode
-	GOBD_INTEGER
-};
-
-#pragma pack(4)
-
-typedef struct rebol_gob REBGOB;
-
-struct rebol_gob {		// size: 64 bytes!
-	REBCNT flags;		// option flags
-	REBCNT state;		// state flags
-
-	REBSER *pane;		// List of child GOBs
-	REBGOB *parent;		// Parent GOB (or window ptr)
-
-	REBYTE alpha;		// transparency
-	REBYTE ctype;		// content data type
-	REBYTE dtype;		// pointer data type
-	REBYTE resv;		// reserved
-
-	union {
-		REBGOB *owner;	// temp field - reused for different things
-	};
-
-	REBSER *content;	// content value (block, string, color)
-	REBSER *data;		// user defined data
-
-	REBXYF offset;		// location
-	REBXYF size;
-	REBXYF old_offset;	// prior location
-	REBXYF old_size;	// prior size
-};
-#pragma pack()
-
-typedef struct gob_window {				// Maps gob to window
-	REBGOB *gob;
-	void* win;
-	void* compositor;
-} REBGOBWINDOWS;
-
-#define GOB_X(g)		((g)->offset.x)
-#define GOB_Y(g)		((g)->offset.y)
-#define GOB_W(g)		((g)->size.x)
-#define GOB_H(g)		((g)->size.y)
-
-#define GOB_LOG_X(g)		(LOG_COORD_X((g)->offset.x))
-#define GOB_LOG_Y(g)		(LOG_COORD_Y((g)->offset.y))
-#define GOB_LOG_W(g)		(LOG_COORD_X((g)->size.x))
-#define GOB_LOG_H(g)		(LOG_COORD_Y((g)->size.y))
-
-#define GOB_X_INT(g)	ROUND_TO_INT((g)->offset.x)
-#define GOB_Y_INT(g)	ROUND_TO_INT((g)->offset.y)
-#define GOB_W_INT(g)	ROUND_TO_INT((g)->size.x)
-#define GOB_H_INT(g)	ROUND_TO_INT((g)->size.y)
-
-#define GOB_LOG_X_INT(g)	ROUND_TO_INT(LOG_COORD_X((g)->offset.x))
-#define GOB_LOG_Y_INT(g)	ROUND_TO_INT(LOG_COORD_Y((g)->offset.y))
-#define GOB_LOG_W_INT(g)	ROUND_TO_INT(LOG_COORD_X((g)->size.x))
-#define GOB_LOG_H_INT(g)	ROUND_TO_INT(LOG_COORD_Y((g)->size.y))
-
-#define GOB_XO(g)		((g)->old_offset.x)
-#define GOB_YO(g)		((g)->old_offset.y)
-#define GOB_WO(g)		((g)->old_size.x)
-#define GOB_HO(g)		((g)->old_size.y)
-#define GOB_XO_INT(g)	ROUND_TO_INT((g)->old_offset.x)
-#define GOB_YO_INT(g)	ROUND_TO_INT((g)->old_offset.y)
-#define GOB_WO_INT(g)	ROUND_TO_INT((g)->old_size.x)
-#define GOB_HO_INT(g)	ROUND_TO_INT((g)->old_size.y)
-
-#define CLEAR_GOB_STATE(g) ((g)->state = 0)
-
-#define SET_GOB_FLAG(g,f)       SET_FLAG((g)->flags, f)
-#define GET_GOB_FLAG(g,f)       GET_FLAG((g)->flags, f)
-#define CLR_GOB_FLAG(g,f)       CLR_FLAG((g)->flags, f)
-#define CLR_GOB_FLAGS(g,f,h)    CLR_FLAGS((g)->flags, f, h)
-#define SET_GOB_STATE(g,f)      SET_FLAG((g)->state, f)
-#define GET_GOB_STATE(g,f)      GET_FLAG((g)->state, f)
-#define CLR_GOB_STATE(g,f)      CLR_FLAG((g)->state, f)
-#define CLR_GOB_STATES(g,f,h)   CLR_FLAGS((g)->state, f, h)
-
-#define GOB_ALPHA(g)		((g)->alpha)
-#define GOB_TYPE(g)			((g)->ctype)
-#define SET_GOB_TYPE(g,t)	((g)->ctype = (t))
-#define GOB_DTYPE(g)		((g)->dtype)
-#define SET_GOB_DTYPE(g,t)	((g)->dtype = (t))
-#define GOB_DATA(g)			((g)->data)
-#define SET_GOB_DATA(g,v)	((g)->data = (v))
-#define GOB_TMP_OWNER(g)	((g)->owner)
-
-#define IS_GOB_OPAQUE(g)  GET_GOB_FLAG(g, GOBF_OPAQUE)
-#define SET_GOB_OPAQUE(g) SET_GOB_FLAG(g, GOBF_OPAQUE)
-#define CLR_GOB_OPAQUE(g) CLR_GOB_FLAG(g, GOBF_OPAQUE)
-
-#define GOB_PANE(g)		((g)->pane)
-#define GOB_PARENT(g)	((g)->parent)
-#define GOB_CONTENT(g)	((g)->content)
-
-#define GOB_WIDGET_HANDLE(g) (BLK_HEAD(GOB_CONTENT(g)))
-#define GOB_WIDGET_TYPE(g) (BLK_SKIP(GOB_CONTENT(g), 1))
-#define GOB_WIDGET_SPEC(g) (BLK_SKIP(GOB_CONTENT(g), 2))
-#define GOB_WIDGET_DATA(g) (BLK_SKIP(GOB_CONTENT(g), 3))
-
-// Control dependencies on series structures:
-#ifdef REB_DEF
-#define GOB_STRING(g)	SERIES_DATA(GOB_CONTENT(g))
-#define GOB_TAIL(g)		SERIES_TAIL((g)->pane)
-#define GOB_HEAD(g)		((REBGOB **)(SERIES_DATA(GOB_PANE(g))))
-#else
-#define GOB_STRING(g)	((REBYTE *)RL_Series(GOB_CONTENT(g), (REBCNT)RXI_SER_DATA))
-#define GOB_TAIL(g)		((REBCNT)RL_Series(GOB_PANE(g), (REBCNT)RXI_SER_TAIL))
-#define GOB_HEAD(g)		((REBGOB **)RL_Series(GOB_PANE(g), (REBCNT)RXI_SER_DATA))
-#endif
-#define GOB_BITMAP(g)	GOB_STRING(g)
-#define GOB_SKIP(g,n)	(GOB_HEAD(g)+n)
-
-#define IS_WINDOW(g)	(GOB_PARENT(g) == Gob_Root && GET_GOB_FLAG(g, GOBF_WINDOW))
-
-#define IS_GOB_COLOR(g)	 (GOB_TYPE(g) == GOBT_COLOR)
-#define IS_GOB_DRAW(g)	 (GOB_CONTENT(g) && GOB_TYPE(g) == GOBT_DRAW)
-#define IS_GOB_IMAGE(g)	 (GOB_CONTENT(g) && GOB_TYPE(g) == GOBT_IMAGE)
-#define IS_GOB_EFFECT(g) (GOB_CONTENT(g) && GOB_TYPE(g) == GOBT_EFFECT)
-#define IS_GOB_STRING(g) (GOB_CONTENT(g) && GOB_TYPE(g) == GOBT_STRING)
-#define IS_GOB_TEXT(g)   (GOB_CONTENT(g) && GOB_TYPE(g) == GOBT_TEXT)
-
-// GC Flags:
-enum {
-	GOB_MARK = 1,		// Gob was found during GC mark scan.
-	GOB_USED = 1<<1		// Gob is used (not free).
-};
-
-#define IS_GOB_MARK(g)	((g)->resv & GOB_MARK)
-#define MARK_GOB(g)		((g)->resv |= GOB_MARK)
-#define UNMARK_GOB(g)	((g)->resv &= ~GOB_MARK)
-#define IS_GOB_USED(g)	((g)->resv & GOB_USED)
-#define USE_GOB(g)		((g)->resv |= GOB_USED)
-#define FREE_GOB(g)		((g)->resv &= ~GOB_USED)
-
-extern REBGOB *Gob_Root; // Top level GOB (the screen)
-
-#endif
-#pragma pack(4)
-
 typedef struct Reb_Series_Ref
 {
 	REBSER	*series;
@@ -2422,23 +2124,6 @@ typedef struct Reb_Error {
 
 /***********************************************************************
 **
-**	GOBS - Graphic Objects
-**
-***********************************************************************/
-
-typedef struct Reb_Gob {
-	REBGOB *gob;
-	REBCNT index;
-} REBGBO;
-
-#define	VAL_GOB(v)			((v)->data.gob.gob)
-#define	VAL_GOB_INDEX(v)	((v)->data.gob.index)
-#define SET_GOB(v,g)		VAL_SET(v, REB_GOB), VAL_GOB(v)=g, VAL_GOB_INDEX(v)=0
-
-typedef struct rebol_compositor_ctx REBCMP; // Rebol compositor context
-
-/***********************************************************************
-**
 **	FUNCTIONS - Natives, actions, operators, and user functions
 **
 ***********************************************************************/
@@ -2488,6 +2173,10 @@ typedef struct Reb_Path_Value {
 	REBVAL *setval;	// static
 	REBVAL *orig;	// static
 } REBPVS;
+
+// Sets `ret` for the field named by `word` (always a word!) and returns TRUE,
+// or returns FALSE for an unknown field. `ctx` is passed through untouched.
+typedef REBOOL (*REB_QUERY_FN)(REBVAL *value, REBVAL *word, REBVAL *ret, void *ctx);
 
 enum Path_Eval_Result {
 	PE_OK,
@@ -2541,6 +2230,7 @@ enum Handle_Flags {
 	HANDLE_CONTEXT_MARKED = 1 << 3,  // used in handle's context (HOB)
 	HANDLE_CONTEXT_USED   = 1 << 4,  // --//--
 	HANDLE_CONTEXT_LOCKED = 1 << 5,  // so Rebol will not GC the handle if C side still depends on it
+	HANDLE_CONTEXT_RELEASED = 1 << 6, // released explicitly; the HOB stays allocated until GC finds it unreferenced
 };
 
 /***********************************************************************
@@ -2615,6 +2305,11 @@ typedef struct Reb_Handle {
 #define IS_USED_HOB(h)         ((h)->flags &   HANDLE_CONTEXT_USED)   // used to detect if handle's context is still valid
 #define     USE_HOB(h)         ((h)->flags |=  HANDLE_CONTEXT_USED | HANDLE_CONTEXT_MARKED)
 #define   UNUSE_HOB(h)         ((h)->flags &= ~HANDLE_CONTEXT_USED)
+// A released HOB is no longer valid (not USED), but it is not returned to the
+// pool while any value may still refer to it - otherwise the next new handle
+// would get the same address and the stale value would see it as its own.
+#define IS_RELEASED_HOB(h)     ((h)->flags &   HANDLE_CONTEXT_RELEASED)
+#define IS_ALLOCATED_HOB(h)    ((h)->flags &  (HANDLE_CONTEXT_USED | HANDLE_CONTEXT_RELEASED))
 #define IS_MARK_HOB(h)         ((h)->flags &  (HANDLE_CONTEXT_MARKED | HANDLE_CONTEXT_LOCKED)) // GC marks still used handles, so these are not released
 #define    MARK_HOB(h)         ((h)->flags |=  HANDLE_CONTEXT_MARKED)
 #define  UNMARK_HOB(h)         ((h)->flags &= ~HANDLE_CONTEXT_MARKED)
@@ -2845,7 +2540,6 @@ typedef struct Reb_All {
 		REBLIB  library;
 		REBROT  routine;
 		REBSTU  structure;
-		REBGBO	gob;
 		REBUDT  utype;
 		REBDCI  deci;
 		REBHAN  handle;
@@ -2872,8 +2566,6 @@ typedef struct Reb_All {
 #pragma pack()
 
 #endif // value.h
-
-
 //#include "reb-evtypes.h"
 /***********************************************************************
 **
@@ -2887,8 +2579,8 @@ typedef struct Reb_All {
 ************************************************************************
 **
 **  Title: Event Types
-**  Build: 3.22.10
-**  Date:  28-Sep-2026
+**  Build: 3.22.12
+**  Date:  28-Oct-2026
 **  File:  reb-evtypes.h
 **
 **  AUTO-GENERATED FILE - Do not modify. (From: make-boot.reb)
@@ -3877,8 +3569,8 @@ enum {
 ************************************************************************
 **
 **  Title: REBOL Host and Extension API
-**  Build: 3.22.10
-**  Date:  28-Sep-2026
+**  Build: 3.22.12
+**  Date:  28-Oct-2026
 **  File:  reb-lib.reb
 **
 **  AUTO-GENERATED FILE - Do not modify. (From: make-reb-lib.reb)
@@ -3890,7 +3582,7 @@ enum {
 // for compatiblity with the reb-lib DLL (using RL_Version.)
 #define RL_VER 3
 #define RL_REV 22
-#define RL_UPD 10
+#define RL_UPD 12
 
 // Bumped ONLY when an existing RL_API function's signature/semantics
 // change in a way that breaks old extension binaries calling it - i.e.
@@ -4765,6 +4457,10 @@ extern RL_LIB *RL;  // is passed to the RX_Init() function
 **		nothing
 **	Arguments:
 **		hob - handle's context
+**	Notes:
+**		The resources are released now, but the context itself stays
+**		allocated until no value refers to it. A released handle can
+**		therefore never be mistaken for a handle created later.
 **
 */
 
@@ -5017,8 +4713,10 @@ extern RL_LIB *RL;  // is passed to the RX_Init() function
 **		port   - port frame, as received in a port! command argument
 **		device - device id from RL_Register_Device
 **	Notes:
-**		The state is sized sizeof(REBREQ) for every device (see
-**		Init_Ports), so a device needing more must keep it behind
+**		The state holds the port's request followed by a second request
+**		used internally by net ports for WRITE (see PORT_STATE_REQS in
+**		c-port.c). The returned request is the first one; it has the size
+**		sizeof(REBREQ), so a device needing more must keep it behind
 **		req->handle, the way dev-midi.c does.
 **
 **		Allocating the handle can trap on out of memory, which longjmps
@@ -5222,17 +4920,19 @@ RL_API REBINT RL_Form_Value(REBSER *dst, RXIARG val, REBCNT type, REBCNT limit, 
 ***********************************************************************/
 
 #define APPEND_STRING(str, ...) \
-	len = snprintf(NULL,0,__VA_ARGS__);\
-	if (len > (int)(SERIES_REST(str)-SERIES_LEN(str))) {\
-		RL_EXPAND_SERIES(str, SERIES_TAIL(str), len);\
-		SERIES_TAIL(str) -= len;\
-	}\
-	len = snprintf( \
-		SERIES_TEXT(str)+SERIES_TAIL(str),\
-		SERIES_REST(str)-SERIES_TAIL(str),\
-		__VA_ARGS__\
-	);\
-	SERIES_TAIL(str) += len;
+	do { \
+		size_t __len = snprintf(NULL, 0, __VA_ARGS__); \
+		if (__len > (size_t)(SERIES_REST(str)-SERIES_LEN(str))) { \
+			RL_EXPAND_SERIES(str, SERIES_TAIL(str), (REBCNT)__len); \
+			SERIES_TAIL(str) -= (REBLEN)__len; \
+		} \
+		len = snprintf( \
+			SERIES_TEXT(str)+SERIES_TAIL(str), \
+			SERIES_REST(str)-SERIES_TAIL(str), \
+			__VA_ARGS__ \
+		); \
+		SERIES_TAIL(str) += (REBLEN)len; \
+	} while(0)
 
 
 /***********************************************************************
